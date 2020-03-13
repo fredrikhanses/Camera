@@ -24,11 +24,31 @@ public class OrbitCamera : MonoBehaviour
     [SerializeField, Min(0.0f)]
     float alignDelay = 5.0f;
 
+    [SerializeField, Range(0.0f, 90.0f)]
+    float alignSmoothRange = 45.0f;
+
+    [SerializeField]
+    LayerMask obstructionMask = -1;
+
+    Camera regularCamera;
+
     Vector3 focusPoint, previousFocusPoint;
 
     Vector2 orbitAngles = new Vector2(45.0f, 0.0f);
 
     float lastManualRotationTime;
+
+    Vector3 CameraHalfExtends
+    {
+        get
+        {
+            Vector3 halfExtends;
+            halfExtends.y = regularCamera.nearClipPlane * Mathf.Tan(0.5f * Mathf.Deg2Rad * regularCamera.fieldOfView);
+            halfExtends.x = halfExtends.y * regularCamera.aspect;
+            halfExtends.z = 0.0f;
+            return halfExtends;
+        }
+    }
 
     void OnValidate()
     {
@@ -40,8 +60,10 @@ public class OrbitCamera : MonoBehaviour
 
     void Awake()
     {
+        regularCamera = GetComponent<Camera>();
         focusPoint = focus.position;
         transform.localRotation = Quaternion.Euler(orbitAngles);
+        Cursor.visible = false;
     }
 
     void LateUpdate()
@@ -60,11 +82,23 @@ public class OrbitCamera : MonoBehaviour
         }
         Vector3 lookDirection = lookRotation * Vector3.forward;
         Vector3 lookPosition = focusPoint - lookDirection * distance;
+        Vector3 rectOffset = lookDirection * regularCamera.nearClipPlane;
+        Vector3 rectPosition = lookPosition + rectOffset;
+        Vector3 castFrom = focus.position;
+        Vector3 castLine = rectPosition - castFrom;
+        float castDistance = castLine.magnitude;
+        Vector3 castDirection = castLine / castDistance;
+        if(Physics.BoxCast(castFrom, CameraHalfExtends, castDirection, out RaycastHit hit, lookRotation, castDistance, obstructionMask))
+        {
+            rectPosition = castFrom + castDirection * hit.distance;
+            lookPosition = rectPosition - rectOffset;
+        }
         transform.SetPositionAndRotation(lookPosition, lookRotation);
     }
 
     void UpdateFocusPoint()
-    {        
+    {
+        previousFocusPoint = focusPoint;
         Vector3 targetPoint = focus.position;
         if(focusRadius > 0.0f)
         {
@@ -77,6 +111,10 @@ public class OrbitCamera : MonoBehaviour
         if (distance > 0.01f && focusCentering > 0.0f)
         {
             focusPoint = Vector3.Lerp(targetPoint, focusPoint, Mathf.Pow(1.0f - focusCentering, Time.unscaledDeltaTime));
+        }
+        else
+        {
+            focusPoint = targetPoint;
         }
     }
 
@@ -93,10 +131,35 @@ public class OrbitCamera : MonoBehaviour
         return false;
     }
 
+    bool AutomaticRotation()
+    {
+        if(Time.unscaledTime - lastManualRotationTime < alignDelay)
+        {
+            return false;
+        }
+        Vector2 movement = new Vector2(focusPoint.x - previousFocusPoint.x, focusPoint.z - previousFocusPoint.z);
+        float movementDeltaSqr = movement.sqrMagnitude;
+        if(movementDeltaSqr < 0.0001f)
+        {
+            return false;
+        }
+        float headingAngle = GetAngle(movement / Mathf.Sqrt(movementDeltaSqr));
+        float deltaAbs = Mathf.Abs(Mathf.DeltaAngle(orbitAngles.y, headingAngle));
+        float rotationChange = rotationSpeed * Mathf.Min(Time.unscaledDeltaTime, movementDeltaSqr);
+        if(deltaAbs < alignSmoothRange)
+        {
+            rotationChange *= deltaAbs / alignSmoothRange;
+        }
+        else if(180.0f - deltaAbs < alignSmoothRange)
+        {
+            rotationChange *= (180.0f - deltaAbs) / alignSmoothRange;
+        }
+        orbitAngles.y = Mathf.MoveTowardsAngle(orbitAngles.y, headingAngle, rotationChange);
+        return true;
+    }
     void ConstrainAngles()
     {
         orbitAngles.x = Mathf.Clamp(orbitAngles.x, minVerticalAngle, maxVerticalAngle);
-
         if (orbitAngles.y < 0f)
         {
             orbitAngles.y += 360f;
@@ -107,12 +170,9 @@ public class OrbitCamera : MonoBehaviour
         }
     }
 
-    bool AutomaticRotation()
+    static float GetAngle(Vector2 direction)
     {
-        if(Time.unscaledTime - lastManualRotationTime < alignDelay)
-        {
-            return false;
-        }
-        return true;
+        float angle = Mathf.Acos(direction.y) * Mathf.Rad2Deg;
+        return direction.x < 0.0f ? 360.0f - angle : angle;
     }
 }

@@ -5,7 +5,7 @@
 public class Controller : MonoBehaviour
 {
     [SerializeField]
-    GameObject Player;
+    Transform playerInputSpace = default;
 
     [SerializeField, Range(0.0f, 100.0f)]
     float maxSpeed = 10.0f, maxAcceleration = 10.0f, maxAirAcceleration = 1.0f;
@@ -46,7 +46,20 @@ public class Controller : MonoBehaviour
     {
         Vector2 playerInput = new Vector2(Input.GetAxis("Horizontal"), Input.GetAxis("Vertical"));
         playerInput = Vector2.ClampMagnitude(playerInput, 1.0f);
-        desiredVelocity = new Vector3(playerInput.x, 0.0f, playerInput.y) * maxSpeed;
+        if(playerInputSpace)
+        {
+            Vector3 forward = playerInputSpace.forward;
+            forward.y = 0.0f;
+            forward.Normalize();
+            Vector3 right = playerInputSpace.right;
+            right.y = 0.0f;
+            right.Normalize();
+            desiredVelocity = (forward * playerInput.y + right * playerInput.x) * maxSpeed;
+        }
+        else
+        {
+            desiredVelocity = new Vector3(playerInput.x, 0.0f, playerInput.y) * maxSpeed;
+        }
         desiredJump |= Input.GetButtonDown("Jump");
     }
 
