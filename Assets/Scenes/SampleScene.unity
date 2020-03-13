@@ -1691,8 +1691,9 @@ MonoBehaviour:
   focus: {fileID: 267779383}
   distance: 5
   focusRadius: 1
-  focusCentering: 0.5
+  focusCentering: 0.75
   rotationSpeed: 90
+  mouseScrollSpeed: 0.5
   minVerticalAngle: -30
   maxVerticalAngle: 60
   alignDelay: 2

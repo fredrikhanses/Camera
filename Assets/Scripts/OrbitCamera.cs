@@ -18,6 +18,9 @@ public class OrbitCamera : MonoBehaviour
     [SerializeField, Range(1.0f, 360.0f)]
     float rotationSpeed = 90.0f;
 
+    [SerializeField, Range(0.1f, 1.0f)]
+    float mouseScrollSpeed = 0.5f;
+
     [SerializeField, Range(-89.0f, 89.0f)]
     float minVerticalAngle = -30.0f, maxVerticalAngle = 60.0f;
 
@@ -70,6 +73,7 @@ public class OrbitCamera : MonoBehaviour
     {
         UpdateFocusPoint();
         ManualRotation();
+        ManualZoom();
         Quaternion lookRotation;
         if (ManualRotation() || AutomaticRotation())
         {
@@ -129,6 +133,27 @@ public class OrbitCamera : MonoBehaviour
             return true;
         }
         return false;
+    }
+
+    void ManualZoom()
+    {
+        float input =Input.GetAxis("Mouse ScrollWheel");
+        if(input < 0.0f)
+        {
+            distance += mouseScrollSpeed;
+            if (distance >= 20.0f)
+            {
+                distance = 20.0f;
+            }
+        }
+        else if(input > 0.0f)
+        {
+            distance -= mouseScrollSpeed;
+            if(distance <= 1.0f)
+            {
+                distance = 1.0f;
+            }
+        }
     }
 
     bool AutomaticRotation()
