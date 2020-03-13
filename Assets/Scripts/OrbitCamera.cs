@@ -96,6 +96,10 @@ public class OrbitCamera : MonoBehaviour
         {
             rectPosition = castFrom + castDirection * hit.distance;
             lookPosition = rectPosition - rectOffset;
+            if((lookPosition - focusPoint).magnitude < 1.0f)
+            {
+                lookPosition = focusPoint;
+            }
         }
         transform.SetPositionAndRotation(lookPosition, lookRotation);
     }
