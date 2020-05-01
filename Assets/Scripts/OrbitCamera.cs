@@ -41,6 +41,8 @@ public class OrbitCamera : MonoBehaviour
 
     float lastManualRotationTime;
 
+    string mouseScrollWheel = "Mouse ScrollWheel", horizontalCamera = "Horizontal Camera", verticalCamera = "Vertical Camera";
+
     Vector3 CameraHalfExtends
     {
         get
@@ -128,7 +130,7 @@ public class OrbitCamera : MonoBehaviour
 
     bool ManualRotation()
     {
-        Vector2 input = new Vector2(Input.GetAxis("Vertical Camera"), Input.GetAxis("Horizontal Camera"));
+        Vector2 input = new Vector2(Input.GetAxis(verticalCamera), Input.GetAxis(horizontalCamera));
         const float e = 0.001f;
         if(input.x < -e || input.x > e || input.y < -e || input.y > e)
         {
@@ -141,7 +143,7 @@ public class OrbitCamera : MonoBehaviour
 
     void ManualZoom()
     {
-        float input =Input.GetAxis("Mouse ScrollWheel");
+        float input =Input.GetAxis(mouseScrollWheel);
         if(input < 0.0f)
         {
             distance += mouseScrollSpeed;
@@ -186,6 +188,7 @@ public class OrbitCamera : MonoBehaviour
         orbitAngles.y = Mathf.MoveTowardsAngle(orbitAngles.y, headingAngle, rotationChange);
         return true;
     }
+
     void ConstrainAngles()
     {
         orbitAngles.x = Mathf.Clamp(orbitAngles.x, minVerticalAngle, maxVerticalAngle);

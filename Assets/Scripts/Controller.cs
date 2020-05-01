@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using System.Collections.Generic;
+using UnityEngine;
 
 [RequireComponent(typeof(Rigidbody))]
 
@@ -19,6 +20,9 @@ public class Controller : MonoBehaviour
     [SerializeField, Range(0.0f, 90.0f)]
     float maxGroundAngle = 40.0f;
 
+    [SerializeField] private List<GameObject> orbitObjectsList = new List<GameObject>();
+    private LinkedList<GameObject> orbitObjects;
+
     Rigidbody body;
 
     Vector3 velocity, desiredVelocity, contactNormal;
@@ -31,6 +35,8 @@ public class Controller : MonoBehaviour
 
     float minGroundDotProduct;
 
+    string jump = "Jump", horizontal = "Horizontal", vertical = "Vertical";
+
     void OnValidate()
     {
         minGroundDotProduct = Mathf.Cos(maxGroundAngle * Mathf.Deg2Rad);    
@@ -42,9 +48,14 @@ public class Controller : MonoBehaviour
         OnValidate();
     }
 
+    private void Start()
+    {
+        orbitObjects = new LinkedList<GameObject>(orbitObjectsList);
+    }
+
     void Update()
     {
-        Vector2 playerInput = new Vector2(Input.GetAxis("Horizontal"), Input.GetAxis("Vertical"));
+        Vector2 playerInput = new Vector2(Input.GetAxis(horizontal), Input.GetAxis(vertical));
         playerInput = Vector2.ClampMagnitude(playerInput, 1.0f);
         if(playerInputSpace)
         {
@@ -60,7 +71,7 @@ public class Controller : MonoBehaviour
         {
             desiredVelocity = new Vector3(playerInput.x, 0.0f, playerInput.y) * maxSpeed;
         }
-        desiredJump |= Input.GetButtonDown("Jump");
+        desiredJump |= Input.GetButtonDown(jump);
     }
 
     void FixedUpdate()
@@ -122,6 +133,16 @@ public class Controller : MonoBehaviour
     void OnCollisionStay(Collision collision)
     {
         EvaluateCollision(collision);
+    }
+
+    private void OnTriggerEnter(Collider other)
+    {
+        Destroy(other.gameObject);
+        if (orbitObjects.Count > 0)
+        {
+            orbitObjects.First.Value.SetActive(true);
+            orbitObjects.RemoveFirst();
+        }
     }
 
     void EvaluateCollision(Collision collision)
